@@ -135,7 +135,7 @@
 
 ;; finish me! case-insensitive-regexp ~> #rx"(?i:abc)d" <-> ("aBcd", "abcd", ...)
 ;;
-(define (lookup-permission/re permission-map
+(define (lookup-permission-aux/re permission-map
                               astring
                               #:case-insensitive (case-insensitive-p #t))
   (let* ([permissions (permission-map-permissions permission-map)]
@@ -156,6 +156,9 @@
   (make-parameter
    (platform->permission-map "froyo")
    permission-map?))
+
+(define (lookup-permission/re astring)
+  (lookup-permission-aux/re (current-permission-map) astring))
 
 ;; Definition: Two of the components of a method declaration comprise the method signature:
 ;;             the method's name and the parameter types.
