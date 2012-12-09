@@ -1,7 +1,7 @@
 ## Example usage:
 
 >racket@permissions.rkt> (lookup-permission/re "wifi")
->'("android.permission.CHANGE_WIFI_STATE"
+> '("android.permission.CHANGE_WIFI_STATE"
 >  "android.permission.CHANGE_WIFI_MULTICAST_STATE"
 >    "android.permission.ACCESS_WIFI_STATE")
 > racket@permissions.rkt> (current-permission-map)
