@@ -1,15 +1,23 @@
 #lang racket
 
-(define-struct platform (version api-level version-code) #:transparent)
+(require (planet dherman/inspector:1:0/inspector))
+(provide platform-for-version lookup/perm->apis lookup-permission/re get-platforms)
+
+(with-public-inspector
+ (define-struct platform (version api-level version-code)))
+
+(define-struct permission-exp (name))
+(define-struct method-exp (return-type class name parameter-list body))
+(define-struct permission-map (platform permissions hash-map/perm->api hash-map/api->perm methods))
 
 (define platforms
   ;; simple-name               platform-version       api-level version-code
   '((jellybean_mr1             "Android 4.2"                 17 "JELLY_BEAN_MR1")
     (jellybean                 "Android 4.1, 4.1.1"          16 "JELLY_BEAN")
     (jb                        "Android 4.1, 4.1.1"          16 "JELLY_BEAN")
-    (icecreamsandwhich_mr1     "Android 4.0.3, 4.0.4"        15 "ICE_CREAM_SANDWHICH_MR1")
-    (icecreamsandwhich         "Android 4.0, 4.0.1, 4.0.2"   14 "ICE_CREAM_SANDWHICH")
-    (ics                       "Android 4.0, 4.0.1, 4.0.2"   14 "ICE_CREAM_SANDWHICH")
+    (icecreamsandwich_mr1     "Android 4.0.3, 4.0.4"        15 "ICE_CREAM_SANDWICH_MR1")
+    (icecreamsandwich         "Android 4.0, 4.0.1, 4.0.2"   14 "ICE_CREAM_SANDWICH")
+    (ics                       "Android 4.0, 4.0.1, 4.0.2"   14 "ICE_CREAM_SANDWICH")
     (honeycomb_mr2             "Android 3.2"                 13 "HONEYCOMB_MR2")
     (honeycomb_mr1             "Android 3.1.X"               12 "HONEYCOMB_MR1")
     (honeycomb                 "Android 3.0.X"               11 "HONEYCOMB")
@@ -25,8 +33,24 @@
     (base                      "Android 1.0"                  1 "BASE")    
      ))
 
-(define (platform-for-version str)
-  (apply make-platform (cdr (assoc (string->symbol str) platforms))))
+
+(define (get-platforms)
+  (map (lambda (x) (symbol->string (car x)))
+       platforms))
+
+(define (platform-for-version version)
+  (let* ([maybe-version
+          (cond [(string? version)
+                 (string->symbol version)]
+                [(symbol? version) version]
+                [else (raise-argument-error 'platform-for-version
+                                            "(or/c string? symbol?)"
+                                            version)])]
+         [version (findf (curry symbol=? maybe-version)
+                         (map car platforms))])
+    
+    (and version
+         (apply make-platform (cdr (assoc version platforms))))))
 
     
 (define mappings
@@ -46,9 +70,8 @@
 (define (platform->permission-map version)
   (let-values ([(permissions perm->api api->perm)
                 (read-mappings/slurp (get-path-for-version version))])
-    (make-permission-map permissions perm->api api->perm #f)))
+    (make-permission-map (platform-for-version version) permissions perm->api api->perm #f)))
 
-                
 ; (or/c path? string?) -> (values list? hash? hash?)
 (define (read-mappings/slurp file)
     (for/fold ([perms empty]
@@ -81,6 +104,7 @@
                         map/perm->api
                         map/api->perm)]))))
 
+
 (define (handle-line line)
   (match line
     [(regexp #rx"Permission:(.*)" (list _ permission))
@@ -99,10 +123,6 @@
 
 (define (read-mappings file)
   (read-mappings/slurp file))
-
-(define-struct permission-exp (name))
-(define-struct method-exp (return-type class name parameter-list body))
-(define-struct permission-map (permissions hash-map/perm->api hash-map/api->perm methods))
 
 (define (lookup/perm->apis permission-map
                            permission-string)
@@ -131,6 +151,12 @@
             (values (cons perm matches-accum))
             (values matches-accum))))))
 
+
+(define current-permission-map
+  (make-parameter
+   (platform->permission-map "froyo")
+   permission-map?))
+
 ;; Definition: Two of the components of a method declaration comprise the method signature:
 ;;             the method's name and the parameter types.
 ;; http://docs.oracle.com/javase/tutorial/java/javaOO/methods.html
@@ -138,11 +164,13 @@
   (lambda (method-string)
     #f))
 
-(define pmap
-  (let-values ([(permissions hash-map/perm->api hash-map/api->perm) 
-                (read-mappings/slurp "./PScout/results/froyo_allmappings")])
-  (make-permission-map 
-                permissions 
-                hash-map/perm->api 
-                hash-map/api->perm
-                #f)))
+;; testing:
+;; (define pmap
+;;   (let-values ([(permissions hash-map/perm->api hash-map/api->perm) 
+;;                 (read-mappings/slurp "./PScout/results/froyo_allmappings")])
+;;   (make-permission-map 
+;;                 permissions 
+;;                 hash-map/perm->api 
+;;                 hash-map/api->perm
+;;                 #f)))
+
