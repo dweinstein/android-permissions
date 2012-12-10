@@ -3,7 +3,12 @@
 (require (planet dherman/inspector:1:0/inspector))
 (require (planet dherman/memoize:3:1))
 
-(provide platform-for-version lookup/perm->apis lookup-permission/re get-platforms current-platform)
+(provide platform-for-version
+         lookup/perm->apis
+         lookup-permission/re
+         get-platform-strings
+         get-permission-strings
+         current-platform)
 
 (with-public-inspector
  (define-struct platform (version api-level version-code permission-map)))
@@ -40,9 +45,6 @@
      ))
 
 
-(define (get-platforms)
-  (map (lambda (x) (symbol->string (car x)))
-       platforms))
 
 (define (platform-for-version version)
   ;; version : (or/c string? symbol?)
@@ -51,6 +53,11 @@
          (apply make-platform `(,@(cdr (assoc version platforms)) ; platform-version api-level version-code
                                 ,(platform->permission-map version))))))
 
+(define (get-platform-strings)
+  (map symbol->string (get-platform-syms)))
+
+(define (get-platform-syms)
+  (map car mappings))
 
 (define/memo (version->sym-version version)
   ;; version : (or/c string? symbol?)
@@ -62,7 +69,7 @@
                                             "(or/c string? symbol?)"
                                             version)])]
          [version (findf (curry symbol=? maybe-version)
-                         (map car platforms))])
+                         (get-platform-syms))])
     version))
   
     
@@ -170,7 +177,7 @@
 (define current-platform
   (make-parameter
    (platform-for-version default-platform-version)
-   (lambda (x) (when platform? x))))
+   (lambda (x) (platform-for-version x))))
 
 (define (lookup-permission/re astring)
   (lookup-permission-aux/re (platform-permission-map (current-platform))
@@ -179,6 +186,9 @@
 (define (lookup/perm->apis permission-string)
   (lookup-aux/perm->apis (platform-permission-map (current-platform))
                          permission-string))
+
+(define (get-permission-strings)
+  (permission-map-permissions (platform-permission-map(current-platform))))
 
 ;; Definition: Two of the components of a method declaration comprise the method signature:
 ;;             the method's name and the parameter types.
