@@ -5,7 +5,9 @@
 
 (provide platform-for-version
          lookup/perm->apis
+         lookup/api->perm
          lookup-permission/re
+         lookup-api/re
          get-platform-strings
          get-permission-strings
          current-platform)
@@ -42,7 +44,7 @@
     (cupcake                   "Android 1.5"                  3 "CUPCAKE")    
     (base_1_1                  "Android 1.1"                  2 "BASE_1_1")
     (base                      "Android 1.0"                  1 "BASE")    
-     ))
+    ))
 
 
 
@@ -71,8 +73,8 @@
          [version (findf (curry symbol=? maybe-version)
                          (get-platform-syms))])
     version))
-  
-    
+
+
 (define mappings
   '((froyo        "froyo_allmappings")
     (gingerbread  "gingerbread_allmappings")
@@ -96,35 +98,35 @@
 
 (define (read-mappings/slurp file)
   ;; file : (or/c path? string?) 
-    (for/fold ([perms empty]
-               [map/perm->api (hash)]  ; for looking up apis associated with a permission
-               [map/api->perm (hash)]) ; for looking up permissions associated with api
-      
-      ; for each line in the file
-      [(line (file->lines file))]
-      
-      (let-values ([(type thing) (pscout/handle-line line)])
-        (match type
-          ['permission-heading (let ([the-permission thing])
-                                 ;; (printf "~a:~n" the-permission)
-                                 (values (cons the-permission perms)
-                                         map/perm->api
-                                         map/api->perm))]
-          
-          ['method (let ([current-permission (car perms)]
-                         [the-method thing])
-                     ;; (printf "\t~a~n" the-method)
-                     (values perms
-                             (update-hash-map map/perm->api
-                                              current-permission
-                                              the-method)
-                             (update-hash-map map/api->perm
-                                              the-method
-                                              current-permission)))]
-          
-          [else (values perms
-                        map/perm->api
-                        map/api->perm)]))))
+  (for/fold ([perms empty]
+             [map/perm->api (hash)]  ; for looking up apis associated with a permission
+             [map/api->perm (hash)]) ; for looking up permissions associated with api
+    
+    ; for each line in the file
+    [(line (file->lines file))]
+    
+    (let-values ([(type thing) (pscout/handle-line line)])
+      (match type
+        ['permission-heading (let ([the-permission thing])
+                               ;; (printf "~a:~n" the-permission)
+                               (values (cons the-permission perms)
+                                       map/perm->api
+                                       map/api->perm))]
+        
+        ['method (let ([current-permission (car perms)]
+                       [the-method thing])
+                   ;; (printf "\t~a~n" the-method)
+                   (values perms
+                           (update-hash-map map/perm->api
+                                            current-permission
+                                            the-method)
+                           (update-hash-map map/api->perm
+                                            the-method
+                                            current-permission)))]
+        
+        [else (values perms
+                      map/perm->api
+                      map/api->perm)]))))
 
 
 (define (pscout/handle-line line)
@@ -133,7 +135,7 @@
      (values 'permission-heading permission)]
     
     [(regexp #rx"<(.*): (.*) (.*)>.*" (list _ pkg/base ret-val methd-name))
-     (values 'method (string->symbol (format "~a ~a.~a" ret-val pkg/base methd-name)))]
+     (values 'method (format "~a ~a.~a" ret-val pkg/base methd-name))]
     
     [_ (values #f #f)]))
 
@@ -152,12 +154,12 @@
                            permission-string
                            empty)])
     (and (not (empty? results))
-         (map symbol->string results))))
+        results)))
 
 ;;
 (define (lookup-permission-aux/re permission-map
-                              astring
-                              #:case-insensitive (case-insensitive-p #t))
+                                  astring
+                                  #:case-insensitive (case-insensitive-p #t))
   (let* ([permissions (permission-map-permissions permission-map)]
          [re-str (format "(?~a:.*~a.*)" (if case-insensitive-p
                                             "i"
@@ -187,8 +189,22 @@
   (lookup-aux/perm->apis (platform-permission-map (current-platform))
                          permission-string))
 
+(define (lookup-api/re m)
+  (let ([map/api->perm (permission-map-hash-map/api->perm
+                        (platform-permission-map
+                         (current-platform)))])
+    (filter (lambda (str)
+              (regexp-match m str))
+            (hash-keys map/api->perm))))
+
+(define (lookup/api->perm m)
+  (let ([map/api->perm (permission-map-hash-map/api->perm
+                        (platform-permission-map
+                         (current-platform)))])
+    (hash-ref map/api->perm m #f)))
+
 (define (get-permission-strings)
-  (permission-map-permissions (platform-permission-map(current-platform))))
+  (permission-map-permissions (platform-permission-map (current-platform))))
 
 ;; Definition: Two of the components of a method declaration comprise the method signature:
 ;;             the method's name and the parameter types.
@@ -196,6 +212,82 @@
 (define normalize-method-signature
   (lambda (method-string)
     #f))
+
+(require (planet jaymccarthy/sqlite:5:1/sqlite))
+
+;(define (permission-map->sqlite file) #f)
+
+(define (initialize-db db)
+  (exec/ignore db (string-append "CREATE TABLE permissions "
+                                 "( id INTEGER PRIMARY KEY, name TEXT )"))
+  
+  (exec/ignore db (string-append "CREATE TABLE platforms "
+                                 "( id INTEGER PRIMARY KEY, simple_name TEXT,"
+                                 "  platform_version TEXT, api_level INTEGER, "
+                                 "  version_code TEXT)"))
+  
+  (exec/ignore db (string-append "CREATE TABLE perm_api "
+                                 "( id INTEGER PRIMARY KEY,  permission TEXT, api TEXT )"))
+  
+  (for-each (lambda (v)
+              (let ([stmt (prepare db "INSERT INTO permissions (name) VALUES (?)")])
+                (run stmt v)
+                (finalize stmt)))
+            
+            (get-permission-strings))
+  
+  (for-each (lambda (v)
+              (let ([stmt (prepare db (string-append "INSERT INTO platforms "
+                                                     "( simple_name,"
+                                                     "platform_version,"
+                                                     "api_level,"
+                                                     "version_code ) "
+                                                     "VALUES (?,?,?,?)"))])
+                (apply run stmt v)
+                (finalize stmt)))
+            
+            (map (lambda (v) (cons (symbol->string (car v))
+                                   (cdr v)))
+                 platforms)))
+
+(define (read-mappings/slurp->sqlite file db)
+  ;; file : (or/c path? string?) 
+  (define stmt (prepare db
+                        (string-append "INSERT INTO perm_api "
+                                       "( permission, api )"
+                                       " VALUES (?,?)")))
+  (for/fold ([perms empty])
+    ; for each line in the file
+    [(line (file->lines file))]
+    
+    (let-values ([(type thing) (pscout/handle-line line)])
+      (match type
+        ['permission-heading (let ([the-permission thing])
+                               ;; (printf "~a:~n" the-permission)
+                               (values (cons the-permission perms)))]
+        
+        ['method (let ([current-permission (car perms)]
+                       [the-method thing])
+                   (reset stmt) 
+                   (run stmt current-permission the-method)
+                   (values perms))]
+        
+        
+        [else (values perms)])))
+  (finalize stmt))
+
+(define (generate-all-databases)
+  (map (lambda (f)
+         (let ([db (open (build-path "." (string-append (symbol->string f) ".db")))])
+           (printf "doing ~a~n" f)
+           (initialize-db db) 
+            (read-mappings/slurp->sqlite (get-path-for-version f)
+                                         db)
+            (close db)))
+       (map car mappings)))
+          
+         
+
 
 ;; testing:
 ;; (define pmap

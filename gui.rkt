@@ -2,6 +2,8 @@
 
 (require "permissions.rkt")
 
+(require framework/gui-utils)
+
 ;(require sgl sgl/gl-vectors)
 
 ;(application:current-app-name "Analyzer")
@@ -28,36 +30,81 @@
 (new combo-field%
      [parent frame]
      [label "platforms"]
+     [init-value "froyo"]
      [choices (get-platform-strings)]
      [callback (lambda (c e)
-                 (printf "user selected ~a~n" (send c get-value))
-                 (current-platform (string->symbol (send c get-value)))
-                 (send permission-list set (get-permission-strings)))])
+                 (let ([v (send c get-value)])
+                   (printf "user selected ~a~n" v)
+                   (current-platform (string->symbol v))
+                   (send permission-list set (get-permission-strings))))])
+
+
+
+(define (shorten-list-of-strings l)
+  (if (not (empty? l))
+      (map (curryr gui-utils:trim-string 200)
+           l)
+      empty))
+
+
+(define filter-perm
+  (new text-field%
+       [parent frame]
+       [label "filter permissions:"]
+       [callback (lambda (t e)
+                   (let ([v (send t get-value)])
+                     (send permission-list
+                           set
+                           (filter (curry regexp-match v)
+                                   (get-permission-strings)))
+                     
+                     (send msg
+                           set-label
+                           v)))]))
 
 (define permission-list (new list-box%
                              [parent frame]
-                             [choices empty]
-                             [label "permissions"]
+                             [choices (get-permission-strings)]
+                             [label "permissions:"]
+                             ;; [style '(multiple)]
                              [callback (lambda (c e)
                                          (printf "user selected ~a~n" (send c get-string-selection))
+                                         ;; (send c set-first-visible-item (send c get-selection))
+                                         (send (send filter-perm get-editor) erase)
                                          (send methods-list set
-                                               (lookup/perm->apis (send c get-string-selection))))]))
+                                               (shorten-list-of-strings
+                                                    (lookup/perm->apis
+                                                     (send c get-string-selection)))
+                                                    ))]))
 
-(define methods-list (new list-box%
-                             [parent frame]
-                             [choices empty]
-                             [label "methods"]
-                             [callback (lambda (c e)
-                                         (printf "user selected ~a~n" (send c get-string-selection)))]))
- 
-
-(new text-field%
+(define filter-method
+  (new text-field%
      [parent frame]
-     [label "search"]
+     [label "filter methods:"]
      [callback (lambda (t e)
-                 (send msg set-label (send t get-value)))])
-      
- 
+                 (let ([v (send t get-value)])
+                   (send methods-list set (shorten-list-of-strings (lookup-api/re v)))
+                   (send msg set-label v)))]))
+
+(define methods-list
+  (new list-box%
+       [parent frame]
+       [choices (shorten-list-of-strings (lookup-api/re ""))]
+       [label "methods:   "]
+       [callback (lambda (c e)
+                   (let* ([v (send c get-string-selection)]
+                          [maybe-perms (lookup/api->perm v)])
+                     (printf "user selected ~a~n" v)
+                     (send (send filter-method get-editor) erase)
+                     (when maybe-perms
+                       (for-each (lambda (p)
+                                   (send permission-list
+                                         set-string-selection
+                                         p))
+                                 maybe-perms))
+                     ))]
+       ))
+
 ; Show the frame by calling its show method
 (send frame show #t) 
 ; Derive a new canvas (a drawing window) class to handle events
