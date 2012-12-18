@@ -62,19 +62,20 @@
                            set-label
                            v)))]))
 
+
 (define permission-list (new list-box%
                              [parent frame]
                              [choices (get-permission-strings)]
                              [label "permissions:"]
                              ;; [style '(multiple)]
                              [callback (lambda (c e)
-                                         (printf "user selected ~a~n" (send c get-string-selection))
-                                         ;; (send c set-first-visible-item (send c get-selection))
-                                         (send (send filter-perm get-editor) erase)
-                                         (send methods-list set
+                                         (let ([v (send c get-string-selection)])
+                                           (printf "user selected ~a~n" v)
+                                           ;; (send c set-first-visible-item (send c get-selection))
+                                           ;; (send (send filter-perm get-editor) erase)
+                                           (send methods-list set
                                                (shorten-list-of-strings
-                                                    (lookup/perm->apis
-                                                     (send c get-string-selection)))
+                                                    (lookup/perm->apis v)))
                                                     ))]))
 
 (define filter-method
@@ -95,13 +96,13 @@
                    (let* ([v (send c get-string-selection)]
                           [maybe-perms (lookup/api->perm v)])
                      (printf "user selected ~a~n" v)
-                     (send (send filter-method get-editor) erase)
-                     (when maybe-perms
-                       (for-each (lambda (p)
-                                   (send permission-list
-                                         set-string-selection
-                                         p))
-                                 maybe-perms))
+                     ;(send (send filter-method get-editor) erase)
+                     ;; (when maybe-perms
+                     ;;   (for-each (lambda (p)
+                     ;;               (send permission-list
+                     ;;                     set-string-selection
+                     ;;                     p))
+                     ;;             maybe-perms))
                      ))]
        ))
 
