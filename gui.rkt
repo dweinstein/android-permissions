@@ -35,7 +35,16 @@
                  (let ([v (send c get-value)])
                    (printf "user selected ~a~n" v)
                    (current-platform (string->symbol v))
-                   (send permission-list set (get-permission-strings))))])
+                   (send permission-list set (get-permission-strings))
+                   (send methods-list set (shorten-list-of-strings
+                                           (lookup-api/re "")))
+                   
+                   (send permission-list select 0 #t)
+                   (send permission-list select 0 #f)
+                   (send methods-list select 0 #t)
+                   (send methods-list select 0 #f)
+                   (send perm-for-meth clear)
+                   ))])
 
 
 
@@ -72,9 +81,9 @@
                                            ;(printf "user selected ~a~n" v)
                                            ;; (send c set-first-visible-item (send c get-selection))
                                            ;; (send (send filter-perm get-editor) erase)
-                                           (send methods-list set
-                                               (shorten-list-of-strings
-                                                    (lookup/perm->apis v)))
+                                           (when v (send methods-list set
+                                                         (shorten-list-of-strings
+                                                          (lookup/perm->apis v))))
                                                     ))]))
 
 (define filter-method
@@ -89,11 +98,12 @@
 (define methods-list
   (new list-box%
        [parent frame]
-       [choices (shorten-list-of-strings (lookup-api/re ""))]
+       [choices (shorten-list-of-strings
+                 (lookup-api/re ""))]
        [label "methods:   "]
        [callback (lambda (c e)
                    (let* ([v (send c get-string-selection)]
-                           [maybe-perms (lookup/api->perm v)])
+                          [maybe-perms (lookup/api->perm v)])
                      ;(printf "user selected ~a which requires permissions: ~a~n" v maybe-perms)
                      ;; (send (send filter-method get-editor) erase)
                      (when maybe-perms
