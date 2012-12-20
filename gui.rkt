@@ -2,30 +2,29 @@
 
 (require "permissions.rkt")
 
+(require framework)
 (require framework/gui-utils)
 
 ;(require sgl sgl/gl-vectors)
 
-;(application:current-app-name "Analyzer")
+; (application:current-app-name "Permission Analyzer")
 ; Make a frame by instantiating the frame% class
-
-(define frame (new frame% [label "Analyzer"] [width 300] [height 300]))
+(define frame (new frame% [label "Permission Analyzer"] [width 300] [height 300]))
  
 ; Make a static text message in the frame
 (define msg (new message% [parent frame]
                           [label "No events so far..."]))
 
+;; ; Make a button in the frame
+;; (new button% [parent frame]
+;;              [label "Click Me"]
+;;              ; Callback procedure for a button click:
+;;              [callback (lambda (button event)
+;;                          (send msg set-label "Button click"))])
 
-; Make a button in the frame
-(new button% [parent frame]
-             [label "Click Me"]
-             ; Callback procedure for a button click:
-             [callback (lambda (button event)
-                         (send msg set-label "Button click"))])
-
-(new button% [parent frame]
-             [label "Pause"]
-             [callback (lambda (button event) (sleep 5))])
+;; (new button% [parent frame]
+;;              [label "Pause"]
+;;              [callback (lambda (button event) (sleep 5))])
 
 (new combo-field%
      [parent frame]
@@ -70,7 +69,7 @@
                              ;; [style '(multiple)]
                              [callback (lambda (c e)
                                          (let ([v (send c get-string-selection)])
-                                           (printf "user selected ~a~n" v)
+                                           ;(printf "user selected ~a~n" v)
                                            ;; (send c set-first-visible-item (send c get-selection))
                                            ;; (send (send filter-perm get-editor) erase)
                                            (send methods-list set
@@ -94,17 +93,24 @@
        [label "methods:   "]
        [callback (lambda (c e)
                    (let* ([v (send c get-string-selection)]
-                          [maybe-perms (lookup/api->perm v)])
-                     (printf "user selected ~a~n" v)
-                     ;(send (send filter-method get-editor) erase)
-                     ;; (when maybe-perms
-                     ;;   (for-each (lambda (p)
-                     ;;               (send permission-list
-                     ;;                     set-string-selection
-                     ;;                     p))
-                     ;;             maybe-perms))
+                           [maybe-perms (lookup/api->perm v)])
+                     ;(printf "user selected ~a which requires permissions: ~a~n" v maybe-perms)
+                     ;; (send (send filter-method get-editor) erase)
+                     (when maybe-perms
+                       (send perm-for-meth
+                             set
+                             maybe-perms))
                      ))]
        ))
+
+(define perm-for-meth
+  (new list-box%
+       [parent frame]
+       [choices empty]
+       [label "permissions for api:"]
+       [callback (lambda (c e)
+                   #f)]))
+
 
 ; Show the frame by calling its show method
 (send frame show #t) 
