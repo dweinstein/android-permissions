@@ -1,5 +1,15 @@
+# Get racket and this code
+* Grab the racket language from http://racket-lang.org/download/
+* Add the 'racket' binary to your path:
+``` $ export PATH="/Users/user/Downloads/Local Applications/Racket\ v5.3/bin/:${PATH}" ```
+* Download this code: 
+```
+$ git clone git@github.com:dweinstein/android-permissions.git
+```
+* You can either run DrRacket and load the 'gui.rkt' file and run it, or use the terminal:
+
 # GUI usage:
-To run the GUI:
+To run the GUI (open a terminal and navigate to this directory):
 ```
 $ racket gui.rkt
 ```
