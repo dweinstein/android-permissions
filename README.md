@@ -23,6 +23,18 @@ Welcome to Racket v5.3.
 -> (current-platform)
 (platform "Android 2.2.X" 8 "FROYO" #<permission-map>)
 ```
+## API available
+From [[https://github.com/dweinstein/android-permissions/blob/master/permissions.rkt]]
+```
+(provide platform-for-version
+         lookup/perm->apis
+         lookup/api->perm
+         lookup-permission/re
+         lookup-api/re
+         get-platform-strings
+         get-permission-strings
+         current-platform)
+```
 
 ## Change platform
 By changing the 'current-platform' you can adjust the context of the methods when doing lookup operations.
