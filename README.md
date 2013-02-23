@@ -35,6 +35,12 @@ From https://github.com/dweinstein/android-permissions/blob/master/permissions.r
          get-permission-strings
          current-platform)
 ```
+## Android Platforms Spported
+```
+-> (get-platform-strings)
+'("froyo" "gingerbread" "honeycomb" "ics" "jellybean")
+```
+
 
 ## Change platform
 By changing the 'current-platform' you can adjust the context of the methods when doing lookup operations.
@@ -88,3 +94,5 @@ Now what if you wanted to see for each of these APIs, what permissions do they e
 
 Now we see that they all somehow interact with GET_ACCOUNTS, WRITE_CONTACTS, and READ_CONTACTS.
 
+# Thanks
+This utility uses the results from the work done at University of Toronto on PScout (http://pscout.csl.toronto.edu/)
