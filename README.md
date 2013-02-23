@@ -24,7 +24,7 @@ Welcome to Racket v5.3.
 (platform "Android 2.2.X" 8 "FROYO" #<permission-map>)
 ```
 ## API available
-From https://github.com/dweinstein/android-permissions/blob/master/permissions.rkt
+From ![permissions.rkt](https://github.com/dweinstein/android-permissions/blob/master/permissions.rkt)
 ```racket
 (provide platform-for-version
          lookup/perm->apis
