@@ -12,11 +12,21 @@ Welcome to Racket v5.3.
 -> (require "permissions.rkt")
 -> (current-platform)
 (platform "Android 2.2.X" 8 "FROYO" #<permission-map>)
--> (lookup-api/re "sms")
-'("boolean com.android.contacts.ContactsListActivity$ContactsSearchActivity.smsContact(android.database.Cursor)"
-  "boolean com.android.contacts.SearchResultsActivity.smsContact(android.database.Cursor)"
-    "boolean com.android.contacts.ContactsListActivity$JoinContactActivity.smsContact(android.database.Cursor)"
-      "boolean com.android.contacts.ContactsListActivity.smsContact(android.database.Cursor)")
+```
+
+## Change platform
+By changing the 'current-platform' you can adjust the context of the methods when doing lookup operations.
+
+```
+-> (current-platform)
+(platform "Android 2.2.X" 8 "FROYO" #<permission-map>)
+-> (current-platform 'ics)
+-> (current-platform)
+(platform
+ "Android 4.0, 4.0.1, 4.0.2"
+  14
+   "ICE_CREAM_SANDWICH"
+    #<permission-map>)
 ```
 
 ## Find permissions
@@ -56,15 +66,3 @@ Now what if you wanted to see for each of these APIs, what permissions do they e
 
 Now we see that they all somehow interact with GET_ACCOUNTS, WRITE_CONTACTS, and READ_CONTACTS.
 
-## Change platform
-```
--> (current-platform)
-(platform "Android 2.2.X" 8 "FROYO" #<permission-map>)
--> (current-platform 'ics)
--> (current-platform)
-(platform
- "Android 4.0, 4.0.1, 4.0.2"
-  14
-   "ICE_CREAM_SANDWICH"
-    #<permission-map>)
-```
