@@ -16,7 +16,7 @@ $ racket gui.rkt
 ![ScreenShot](img/ss1.png)
 
 # REPL usage
-```
+```racket
 $ racket 
 Welcome to Racket v5.3.
 -> (require "permissions.rkt")
@@ -24,8 +24,8 @@ Welcome to Racket v5.3.
 (platform "Android 2.2.X" 8 "FROYO" #<permission-map>)
 ```
 ## API available
-From [[https://github.com/dweinstein/android-permissions/blob/master/permissions.rkt]]
-```
+From https://github.com/dweinstein/android-permissions/blob/master/permissions.rkt
+```racket
 (provide platform-for-version
          lookup/perm->apis
          lookup/api->perm
@@ -39,7 +39,7 @@ From [[https://github.com/dweinstein/android-permissions/blob/master/permissions
 ## Change platform
 By changing the 'current-platform' you can adjust the context of the methods when doing lookup operations.
 
-```
+```racket
 -> (current-platform)
 (platform "Android 2.2.X" 8 "FROYO" #<permission-map>)
 -> (current-platform 'ics)
@@ -52,14 +52,14 @@ By changing the 'current-platform' you can adjust the context of the methods whe
 ```
 
 ## Find permissions
-```
+```racket
 -> (lookup-permission/re "bluetooth")
 '("android.permission.BLUETOOTH_ADMIN" "android.permission.BLUETOOTH")
 ```
 
 ## Lookup APIs and their permissions
 Note that the lookup-api/re function uses a case sensitive matching:
-```
+```racket
 -> (lookup-api/re "sms")
 '("boolean com.android.contacts.ContactsListActivity$ContactsSearchActivity.smsContact(android.database.Cursor)"
   "boolean com.android.contacts.SearchResultsActivity.smsContact(android.database.Cursor)"
@@ -68,7 +68,7 @@ Note that the lookup-api/re function uses a case sensitive matching:
 ```
 
 Now what if you wanted to see for each of these APIs, what permissions do they exercise each individually:
-```
+```racket
 -> (map (lambda (api) 
             (lookup/api->perm api)) 
         (lookup-api/re "sms"))
